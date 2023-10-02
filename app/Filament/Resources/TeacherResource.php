@@ -7,6 +7,7 @@ use App\Filament\Resources\TeacherResource\RelationManagers;
 use App\Models\AcademicYear;
 use App\Models\Subjects;
 use App\Models\Teacher;
+use App\Models\User;
 use App\Models\UserTypes;
 use Closure;
 use Filament\Facades\Filament;
@@ -27,22 +28,25 @@ class TeacherResource extends Resource
 
     public static function registerNavigationItems(): void
     {
-        if (UserTypes::isAdmin(Filament::auth()->user()->user_type)){
+        if (!UserTypes::isAdmin(Filament::auth()->user()->user_type)){
             return;
         }
 
         parent::registerNavigationItems();
     }
 
+
     public static function form(Form $form): Form
     {
         $isEditing = $form->getRecord() != null;
         $subjects = Subjects::query()->pluck("name", "id");
+
+
         return $form
             ->schema([
                 Forms\Components\TextInput::make("name")
                     ->required()
-                    ->debounce()
+                    ->live(debounce: 700)
                     ->afterStateUpdated(function ($set, $state) use ($form, $subjects){
                         $subject = $form->getRawState()["subject_id"];
 
@@ -53,10 +57,12 @@ class TeacherResource extends Resource
                     }),
                 Forms\Components\TextInput::make("email")
                     ->email()
+                    ->unique(table: User::class, column: "email", ignorable: $form->getRecord() ? $form->getRecord()->user()->get()->first():null)
                     ->required(),
                 Forms\Components\TextInput::make("password")
-                ->password()
-                ->required(!$isEditing),
+                    ->password()
+                    ->hiddenOn(["view"])
+                    ->required(!$isEditing),
                 Forms\Components\Select::make('subject_id')
                     ->label("Subject")
                     ->options($subjects)
@@ -69,7 +75,18 @@ class TeacherResource extends Resource
                         $set('subject_teacher_name', "$subject ($name)");
                     }),
                 Forms\Components\Select::make('academic_years')
-                    ->options(AcademicYear::query()->pluck("name", "id"))
+                    ->options(function () use ($isEditing, $form){
+                        if ($isEditing){
+                            return AcademicYear::query()
+                                ->whereNotIn("name", $form->getRecord()->academicYears()
+                                    ->get(["name"])
+                                    ->map(fn ($model) => $model->name)
+                                    ->all())
+                                ->pluck("name", "name");
+                        } else {
+                            return AcademicYear::query()->pluck("name", "id");
+                        }
+                    })
                     ->searchable()
                     ->multiple()
                     ->required(),

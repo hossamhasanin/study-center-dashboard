@@ -11,6 +11,12 @@ class Teacher extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        "user_id",
+        "subject_id",
+        "subject_teacher_name"
+    ];
+
     public function user() : BelongsTo
     {
         return $this->belongsTo(User::class);

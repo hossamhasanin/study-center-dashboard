@@ -4,22 +4,22 @@ namespace App\Models;
 
 enum UserTypes: int
 {
-    case Admin = 1;
-    case Teacher = 2;
-    case Student = 3;
+    case Admin = 0;
+    case Teacher = 1;
+    case Student = 2;
 
     public static function isAdmin(int $userType) : bool
     {
-        return $userType == UserTypes::Admin;
+        return $userType == UserTypes::Admin->value;
     }
 
     public static function isTeacher(int $userType) : bool
     {
-        return $userType == UserTypes::Teacher;
+        return $userType == UserTypes::Teacher->value;
     }
 
     public static function isStudent(int $userType) : bool
     {
-        return $userType == UserTypes::Student;
+        return $userType == UserTypes::Student->value;
     }
 }
