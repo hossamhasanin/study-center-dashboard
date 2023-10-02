@@ -15,11 +15,11 @@ enum UserTypes: int
 
     public static function isTeacher(int $userType) : bool
     {
-        return $userType == UserTypes::Teacher->value;
+        return $userType == UserTypes::Teacher->value || self::isAdmin($userType);
     }
 
     public static function isStudent(int $userType) : bool
     {
-        return $userType == UserTypes::Student->value;
+        return $userType == UserTypes::Student->value || self::isAdmin($userType);
     }
 }

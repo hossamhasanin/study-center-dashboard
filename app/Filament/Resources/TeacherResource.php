@@ -25,8 +25,10 @@ class TeacherResource extends Resource
 {
     protected static ?string $model = Teacher::class;
 
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $navigationGroup = "Center Management";
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
     public static function registerNavigationItems(): void
     {
@@ -45,56 +47,64 @@ class TeacherResource extends Resource
 
         return $form
             ->schema([
-                Forms\Components\TextInput::make("name")
-                    ->required()
-                    ->live(debounce: 700)
-                    ->afterStateUpdated(function ($set, $state) use ($form, $subjects){
-                        $subject = $form->getRawState()["subject_id"];
+                Forms\Components\Section::make("Basic info")->schema([
+                    Forms\Components\TextInput::make("name")
+                        ->required()
+                        ->live(debounce: 700)
+                        ->afterStateUpdated(function ($set, $state) use ($form, $subjects){
+                            $subject = $form->getRawState()["subject_id"];
 
-                        if ($subject != ""){
-                            $subject = $subjects[$subject];
-                            $set('subject_teacher_name', "$subject ($state)");
-                        }
-                    }),
-                Forms\Components\TextInput::make("email")
-                    ->email()
-                    ->unique(table: User::class, column: "email", ignorable: $form->getRecord() ? $form->getRecord()->user()->get()->first():null)
-                    ->required(),
-                Forms\Components\TextInput::make("password")
-                    ->password()
-                    ->hiddenOn(["view"])
-                    ->required(!$isEditing),
-                Forms\Components\Select::make('subject_id')
-                    ->label("Subject")
-                    ->options($subjects)
-                    ->required()
-                    ->reactive()
-                    ->searchable()
-                    ->afterStateUpdated(function ($set, $state) use ($form, $subjects){
-                        $name = $form->getRawState()["name"];
-                        $subject = $subjects[$state];
-                        $set('subject_teacher_name', "$subject ($name)");
-                    }),
-                Forms\Components\Select::make('academic_years')
-                    ->options(function () use ($isEditing, $form){
-                        if ($isEditing){
-                            return AcademicYear::query()
-                                ->whereNotIn("name", $form->getRecord()->academicYears()
-                                    ->get(["name"])
-                                    ->map(fn ($model) => $model->name)
-                                    ->all())
-                                ->pluck("name", "name");
-                        } else {
-                            return AcademicYear::query()->pluck("name", "id");
-                        }
-                    })
-                    ->searchable()
-                    ->multiple()
-                    ->required(),
-                Forms\Components\TextInput::make('subject_teacher_name')
-                    ->required()
-                    ->disabled()
-                    ->maxLength(255),
+                            if ($subject != ""){
+                                $subject = $subjects[$subject];
+                                $set('subject_teacher_name', "$subject ($state)");
+                            }
+                        }),
+
+                    Forms\Components\Select::make('subject_id')
+                        ->label("Subject")
+                        ->options($subjects)
+                        ->required()
+                        ->reactive()
+                        ->searchable()
+                        ->afterStateUpdated(function ($set, $state) use ($form, $subjects){
+                            $name = $form->getRawState()["name"];
+                            $subject = $subjects[$state];
+                            $set('subject_teacher_name', "$subject ($name)");
+                        }),
+
+                    Forms\Components\TextInput::make('subject_teacher_name')
+                        ->required()
+                        ->disabled()
+                        ->maxLength(255),
+
+                    Forms\Components\Select::make('academic_years')
+                        ->options(function () use ($isEditing, $form){
+                            if ($isEditing){
+                                return AcademicYear::query()
+                                    ->whereNotIn("name", $form->getRecord()->academicYears()
+                                        ->get(["name"])
+                                        ->map(fn ($model) => $model->name)
+                                        ->all())
+                                    ->pluck("name", "name");
+                            } else {
+                                return AcademicYear::query()->pluck("name", "id");
+                            }
+                        })
+                        ->searchable()
+                        ->multiple()
+                        ->required(),
+                ])->columns(2),
+
+                Forms\Components\Section::make("Authentication info")->schema([
+                    Forms\Components\TextInput::make("email")
+                        ->email()
+                        ->unique(table: User::class, column: "email", ignorable: $form->getRecord() ? $form->getRecord()->user()->get()->first():null)
+                        ->required(),
+                    Forms\Components\TextInput::make("password")
+                        ->password()
+                        ->hiddenOn(["view"])
+                        ->required(!$isEditing),
+                ])->columns(2)
             ]);
     }
 
@@ -149,7 +159,12 @@ class TeacherResource extends Resource
                         return $builder->distinct();
                     })
                     ->multiple()
-                    ->options(fn (): array => AcademicYear::query()->pluck('name', 'id')->all())
+                    ->options(fn (): array => AcademicYear::query()->pluck('name', 'id')->all()),
+                SelectFilter::make('subject_id')
+                    ->label("Subject")
+                    ->query(fn (Builder $query, array $data) => count($data["values"]) == 0 ? $query: $query->whereIn("subject_id" , $data["values"]))
+                    ->multiple()
+                    ->options(fn (): array => Subjects::query()->pluck('name', 'id')->all())
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
