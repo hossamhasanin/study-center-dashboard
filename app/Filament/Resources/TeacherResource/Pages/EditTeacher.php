@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TeacherResource\Pages;
 
+use App\Filament\Resources\ResourcesHelpers;
 use App\Filament\Resources\TeacherResource;
 use App\Filament\Resources\TeacherResource\TeacherResourceHelpers;
 use App\Models\AcademicYear;
@@ -9,6 +10,7 @@ use App\Models\Teacher;
 use App\Models\User;
 use App\Models\UserTypes;
 use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -66,5 +68,13 @@ class EditTeacher extends EditRecord
 
     protected function afterSave(){
         $this->fillForm();
+    }
+
+    protected function configureDeleteAction(DeleteAction $action): void
+    {
+        parent::configureDeleteAction($action);
+        $action->after(function () use($action){
+            ResourcesHelpers::deleteUser($action->getRecord()->user_id);
+        });
     }
 }

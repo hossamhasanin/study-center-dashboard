@@ -12,12 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('teachers_academic_years', function (Blueprint $table) {
-            $table->id();
             $table->foreignId("teacher_id")->index();
             $table->foreign("teacher_id")->on("teachers")->references("id")->cascadeOnDelete();
             $table->foreignId("academic_year_id")->index();
             $table->foreign("academic_year_id")->on("academic_years")->references("id")->cascadeOnDelete();
-            $table->timestamps();
+            $table->primary(["teacher_id", "academic_year_id"]);
         });
     }
 

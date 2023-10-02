@@ -15,9 +15,11 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\DB;
 
 class TeacherResource extends Resource
 {
@@ -34,7 +36,6 @@ class TeacherResource extends Resource
 
         parent::registerNavigationItems();
     }
-
 
     public static function form(Form $form): Form
     {
@@ -103,11 +104,16 @@ class TeacherResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
-                    ->numeric()
-                    ->sortable(),
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('subject.name')
-                    ->numeric()
-                    ->sortable(),
+                    ->badge()
+                    ->color("info")
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('academicYears.name')
+                    ->badge()
+                    ->color("success")
+                    ->listWithLineBreaks()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('subject_teacher_name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
@@ -120,7 +126,30 @@ class TeacherResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('academic_year_id')
+                    ->label("Academic Year")
+                    ->baseQuery(function (Builder $query, array $data): Builder {
+
+                        if (count($data["values"]) == 0){
+                            return $query;
+                        }
+
+                        $builder = $query
+                            ->join("teachers_academic_years" , "teachers.id" , "=" , "teachers_academic_years.teacher_id")
+                            ->join("academic_years", "teachers_academic_years.academic_year_id", "=", "academic_years.id")
+                            ->select("teachers.*");
+
+                        $filter = [];
+                        foreach ($data["values"] as $value){
+                            $filter[] = $value;
+                        }
+
+                        $builder->whereIn("academic_years.id", $filter);
+
+                        return $builder->distinct();
+                    })
+                    ->multiple()
+                    ->options(fn (): array => AcademicYear::query()->pluck('name', 'id')->all())
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

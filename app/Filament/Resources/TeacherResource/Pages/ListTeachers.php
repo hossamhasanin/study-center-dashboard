@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\TeacherResource\Pages;
 
+use App\Filament\Resources\ResourcesHelpers;
 use App\Filament\Resources\TeacherResource;
 use App\Models\UserTypes;
 use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Tables;
 
 class ListTeachers extends ListRecords
 {
@@ -21,5 +23,26 @@ class ListTeachers extends ListRecords
         return [
             Actions\CreateAction::make(),
         ];
+    }
+
+    protected function configureDeleteAction(Tables\Actions\DeleteAction $action): void
+    {
+        parent::configureDeleteAction($action);
+
+        $action->after(function () use($action){
+            ResourcesHelpers::deleteUser($action->getRecord()->user_id);
+        });
+    }
+
+    protected function configureDeleteBulkAction(Tables\Actions\DeleteBulkAction $action): void
+    {
+        parent::configureDeleteBulkAction($action);
+
+        $action->after(function () use($action){
+            foreach ($action->getRecords() as $record){
+                ResourcesHelpers::deleteUser($record->user_id);
+            }
+        });
+
     }
 }
