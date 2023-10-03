@@ -38,45 +38,56 @@ class StudentResource extends Resource
             $studentId = $latestStudent == 0 ? 0 : $latestStudent->id + 1;
         }
 
-        $studentId += 100000;
+        $studentId = intval($studentId) + 100000;
 
         return $form
             ->schema([
                 Forms\Components\Section::make("Authentication info")->schema([
-                    Forms\Components\TextInput::make("email")
-                        ->email()
-                        ->unique(table: User::class, column: "email", ignorable: $form->getRecord() ? $form->getRecord()->user()->get()->first():null)
-                        ->required(),
-                    Forms\Components\TextInput::make("password")
-                        ->password()
-                        ->hiddenOn(["view"])
-                        ->required(!$isEditing),
                     Forms\Components\TextInput::make('student_code')
                         ->disabled()
                         ->default("Student-$studentId")
                         ->suffixIcon("heroicon-m-identification")
                         ->columnSpanFull(),
+                    Forms\Components\TextInput::make("email")
+                        ->email()
+                        ->unique(table: User::class, column: "email", ignorable: $form->getRecord() ? $form->getRecord()->user()->get()->first():null),
+                    Forms\Components\TextInput::make("password")
+                        ->password()
+                        ->hiddenOn(["view"])
+                        ->required(!$isEditing),
                 ])->columns(2),
                 Forms\Components\Section::make("Basic info")->columns(2)->schema([
+                    Forms\Components\TextInput::make("name")
+                        ->required(),
                     Forms\Components\Select::make('academic_year_id')
                         ->label("Academic year")
                         ->relationship('academicYear', 'name')
                         ->searchable()
                         ->preload()
-                        ->required(),
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function ($set, $state){
+                            $set("teachers" , []);
+                        }),
 
                     Forms\Components\Select::make('teachers')
-                        ->label("Signup with")
+                        ->label("Teachers to signup with")
+                        ->live()
                         ->options(function () use ($isEditing, $form){
+                            $academicYear = $form->getRawState()["academic_year_id"];
+                            if ($academicYear == null){
+                                return [];
+                            }
+
                             if ($isEditing){
-                                return Teacher::query()
+                                return AcademicYear::query()->find($academicYear)->teachers()
                                     ->whereNotIn("subject_teacher_name", $form->getRecord()->teachers()
                                         ->get(["subject_teacher_name"])
                                         ->map(fn ($model) => $model->subject_teacher_name)
                                         ->all())
                                     ->pluck("subject_teacher_name", "subject_teacher_name");
                             } else {
-                                return Teacher::query()->pluck("subject_teacher_name", "id");
+                                return AcademicYear::query()->find($academicYear)->teachers()->pluck("subject_teacher_name", "id");
                             }
                         })
                         ->multiple()
@@ -92,11 +103,16 @@ class StudentResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
-                    ->numeric()->copyable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('academicYear.name')
-                    ->numeric()
+                    ->badge()
+                    ->color("info")
                     ->sortable(),
+                Tables\Columns\TextColumn::make('teachers.subject_teacher_name')
+                    ->badge()
+                    ->color("success")
+                    ->listWithLineBreaks()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('student_code')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')

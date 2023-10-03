@@ -43,6 +43,5 @@ class ListTeachers extends ListRecords
                 ResourcesHelpers::deleteUser($record->user_id);
             }
         });
-
     }
 }
