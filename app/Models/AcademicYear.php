@@ -12,9 +12,13 @@ class AcademicYear extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        "name"
+    ];
+
     public function students(): HasMany
     {
-        return $this->hasMany(User::class);
+        return $this->hasMany(Student::class);
     }
 
     public function teachers(): BelongsToMany
