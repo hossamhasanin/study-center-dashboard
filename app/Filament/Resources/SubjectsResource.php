@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\SubjectsResource\Pages;
 use App\Filament\Resources\SubjectsResource\RelationManagers;
 use App\Models\Subjects;
+use App\Models\UserTypes;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -22,6 +24,14 @@ class SubjectsResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function registerNavigationItems(): void
+    {
+        if (!UserTypes::isAdmin(Filament::auth()->user()->user_type)){
+            return;
+        }
+
+        parent::registerNavigationItems();
+    }
 
     public static function form(Form $form): Form
     {

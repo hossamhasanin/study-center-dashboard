@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AcademicYearResource\Pages;
 use App\Filament\Resources\AcademicYearResource\RelationManagers;
 use App\Models\AcademicYear;
+use App\Models\UserTypes;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -20,6 +22,15 @@ class AcademicYearResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
     protected static ?string $navigationGroup = "Center Management";
     protected static ?int $navigationSort = 3;
+
+    public static function registerNavigationItems(): void
+    {
+        if (!UserTypes::isAdmin(Filament::auth()->user()->user_type)){
+            return;
+        }
+
+        parent::registerNavigationItems();
+    }
 
     public static function form(Form $form): Form
     {

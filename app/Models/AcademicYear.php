@@ -30,4 +30,8 @@ class AcademicYear extends Model
             "teacher_id"
         );
     }
+
+    public function exams() : HasMany {
+        return $this->hasMany(Exam::class);
+    }
 }

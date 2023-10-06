@@ -16,7 +16,7 @@ class ListStudents extends ListRecords
 
     public function mount(): void
     {
-        abort_unless(UserTypes::isTeacher(Filament::auth()->user()->user_type), 403);
+        abort_unless(UserTypes::isTeacherOrAdmin(Filament::auth()->user()->user_type), 403);
     }
 
 

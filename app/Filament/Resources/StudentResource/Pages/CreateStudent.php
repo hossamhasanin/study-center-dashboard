@@ -24,7 +24,7 @@ class CreateStudent extends CreateRecord
                 }
                 return $value;
             })
-            ->merge(["user_type" => UserTypes::Teacher->value])
+            ->merge(["user_type" => UserTypes::Student->value])
             ->all();
         /**
          * @var User | $user
